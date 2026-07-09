@@ -52,6 +52,8 @@ Edite o HTML no editor, ajuste o toggle **Auto-healing**, clique em
 **▶ Rodar teste** e veja o resultado no passo a passo. Use o botão
 **Restaurar original** pra voltar ao ponto de partida a qualquer momento.
 
+### Cenários
+
 **1. Baseline** — com o HTML original (como o painel já abre), rode o teste
 com o toggle em qualquer posição. Os três campos devem aparecer como
 "encontrado diretamente" — nenhuma cura necessária.
