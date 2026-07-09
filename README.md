@@ -9,12 +9,30 @@ na hora.
 Tudo acontece dentro do [painel.html](painel.html), direto no navegador — sem
 terminal, sem instalar nada.
 
-## Abrir o painel
+## Clonar e abrir
 
-- Duplo clique em [painel.html](painel.html) (ou arraste pra uma aba do
-  navegador), **ou**
-- se preferir um atalho: `python3 abrir_painel.py` (só usa Python pra abrir o
-  arquivo no navegador padrão, o painel em si não depende disso).
+```bash
+git clone git@github.com:RodriguesClaudiane/AutoHealing.git
+cd AutoHealing/demo-auto-healing
+```
+
+Depois, abra o `painel.html` direto no navegador com um comando (escolha o
+do seu sistema):
+
+```bash
+# Linux
+xdg-open painel.html
+
+# macOS
+open painel.html
+
+# Windows (PowerShell ou CMD)
+start painel.html
+```
+
+Se preferir, também funciona duplo clique no arquivo, arrastar pra uma aba
+do navegador, ou o atalho `python3 abrir_painel.py` (só usa Python pra abrir
+o arquivo no navegador padrão — o painel em si não depende disso).
 
 O painel mostra:
 
