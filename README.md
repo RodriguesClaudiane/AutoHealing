@@ -12,7 +12,7 @@ terminal, sem instalar nada.
 ## Clonar e abrir
 
 ```bash
-git clone git@github.com:RodriguesClaudiane/AutoHealing.git
+git clone https://github.com/RodriguesClaudiane/AutoHealing.git ou git clone git@github.com:RodriguesClaudiane/AutoHealing.git
 cd AutoHealing/demo-auto-healing
 ```
 
