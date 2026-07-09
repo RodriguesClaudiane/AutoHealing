@@ -20,8 +20,12 @@ Depois, abra o `painel.html` direto no navegador com um comando (escolha o
 do seu sistema):
 
 ```bash
-# Linux
+# Linux (com ambiente gráfico nativo)
 xdg-open painel.html
+
+# WSL (Windows Subsystem for Linux) — não tem navegador instalado nele
+# mesmo, então precisa chamar o explorer.exe do Windows
+explorer.exe "$(wslpath -w painel.html)"
 
 # macOS
 open painel.html
@@ -30,9 +34,9 @@ open painel.html
 start painel.html
 ```
 
-Se preferir, também funciona duplo clique no arquivo, arrastar pra uma aba
-do navegador, ou o atalho `python3 abrir_painel.py` (só usa Python pra abrir
-o arquivo no navegador padrão — o painel em si não depende disso).
+Se nenhum desses funcionar, o atalho `python3 abrir_painel.py` já detecta
+WSL automaticamente e resolve isso pra você (é o mais confiável). Duplo
+clique no arquivo, ou arrastar pra uma aba do navegador, também funciona.
 
 O painel mostra:
 
