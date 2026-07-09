@@ -16,10 +16,14 @@ git clone git@github.com:RodriguesClaudiane/AutoHealing.git
 cd AutoHealing/demo-auto-healing
 ```
 
-Depois, abra o `painel.html` direto no navegador com um comando (escolha o
-do seu sistema):
+Depois, abra o `painel.html` direto no navegador com um comando:
 
 ```bash
+# Padrão
+python3 abrir_painel.py
+
+### Se não funcionar, tente:
+
 # Linux (com ambiente gráfico nativo)
 xdg-open painel.html
 
