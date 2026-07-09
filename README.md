@@ -46,7 +46,7 @@ start painel.html
 - o **passo a passo** da execução: qual seletor foi buscado, se curou ou
   falhou, a tabela de fingerprint com o gauge de confiança, e o log completo.
 
-## Desafio
+## Bora testar?
 
 Edite o HTML no editor, ajuste o toggle **Auto-healing**, clique em
 **▶ Rodar teste** e veja o resultado no passo a passo. Use o botão
