@@ -6,63 +6,59 @@ quando a UI muda e um seletor "quebra", o teste tenta se recuperar sozinho,
 procurando o elemento mais parecido com o que era esperado, em vez de falhar
 na hora.
 
-- [main.py](main.py) roda o teste de login contra [app.html](app.html).
-- [selectors.json](selectors.json) guarda o seletor original de cada campo
-  (não mexa nele).
-- O único arquivo que você vai editar é o [app.html](app.html).
+Tudo acontece dentro do [painel.html](painel.html), direto no navegador — sem
+terminal, sem instalar nada.
 
-## Preparar o ambiente
+## Abrir o painel
 
-Só precisa de **Python 3.10+**, sem dependências externas.
+- Duplo clique em [painel.html](painel.html) (ou arraste pra uma aba do
+  navegador), **ou**
+- se preferir um atalho: `python3 abrir_painel.py` (só usa Python pra abrir o
+  arquivo no navegador padrão, o painel em si não depende disso).
 
-```bash
-python3 --version      # confirme que o Python está instalado
-cd demo-auto-healing
-python3 main.py         # deve rodar 2x e terminar em ✅ TESTE PASSOU
-```
+O painel mostra:
 
-Se os dois passos acima passaram, o ambiente está pronto.
-
-Se preferir uma versão visual, sem terminal, abra `python3 abrir_painel.py`
-(ou dê duplo clique em [painel.html](painel.html)) — mesma atividade, rodando
-no navegador.
+- um **editor** com o `app.html` (é o único trecho que você vai editar);
+- uma **pré-visualização ao vivo** da página, à direita/abaixo do editor;
+- o toggle **Auto-healing** (Desligado / Ligado) e o botão **▶ Rodar teste**;
+- o **passo a passo** da execução: qual seletor foi buscado, se curou ou
+  falhou, a tabela de fingerprint com o gauge de confiança, e o log completo.
 
 ## Desafio
 
-Faça cada etapa editando o `app.html`, depois rode o comando indicado.
+Edite o HTML no editor, ajuste o toggle **Auto-healing**, clique em
+**▶ Rodar teste** e veja o resultado no passo a passo. Use o botão
+**Restaurar original** pra voltar ao ponto de partida a qualquer momento.
 
-| Comando | O que faz |
-|---|---|
-| `python3 main.py` | Roda ligado **e** desligado, em sequência |
-| `python3 main.py --healing ligado` | Roda só com auto-healing |
-| `python3 main.py --healing desligado` | Roda só sem auto-healing |
+**1. Baseline** — com o HTML original (como o painel já abre), rode o teste
+com o toggle em qualquer posição. Os três campos devem aparecer como
+"encontrado diretamente" — nenhuma cura necessária.
 
-**1. Baseline** — rode `python3 main.py` sem mexer em nada. As duas rodadas
-devem passar sem nenhuma cura (os ids ainda batem com `selectors.json`).
-
-**2. Refactor de `id`** — troque os três ids (ex.: `username` →
+**2. Refactor de `id`** — troque os três `id`s (ex.: `username` →
 `user-email`, `password` → `user-pass`, `btn-login` → `submit-button`), mas
 mantenha `name`, `type` e `placeholder` como estão.
-- `--healing desligado` → falha com `ElementNotFound` no primeiro seletor.
-- `--healing ligado` → passa: o motor acha os elementos pela fingerprint e
-  gera um `healed_selectors.json` com o "de → para" de cada cura.
+- Com **Desligado**: o resolver fica vermelho e o passo mostra
+  `ElementNotFound` — o teste aborta no primeiro seletor.
+- Com **Ligado**: o resolver mostra a cura (`seletor antigo → novo`), a
+  tabela de fingerprint aparece com o gauge de confiança acima do mínimo, e o
+  teste passa.
 
 **3. Quebra parcial** — além do `id`, mude também o `placeholder` de um
-campo (ex. só o texto, mantendo `name`/`type`). Rode com healing ligado e
-observe no terminal se a confiança ainda passa dos 60% (`CONFIANCA_MINIMA`).
+campo (só o texto, mantendo `name`/`type`). Rode com **Ligado** e observe no
+gauge se a confiança ainda passa da marca de 60%.
 
 **4. Quebra sem cura possível** — num campo, troque `id`, `name` e apague o
 `placeholder` ao mesmo tempo (ou apague o campo inteiro). Mesmo com
-`--healing ligado`, o teste deve falhar: nenhum candidato chega perto o
-suficiente do esperado.
+**Ligado**, o teste deve falhar: o gauge fica abaixo da marca de 60% e o
+passo mostra que nenhum candidato foi bom o suficiente.
 
 **5. Ambiguidade** — duplique um `<input>` parecido com outro (mesmo `type`,
-`placeholder` parecido). Rode com healing ligado e veja qual dos dois o
-motor escolhe como melhor candidato.
+`placeholder` parecido). Rode com **Ligado** e veja, na tabela de
+fingerprint, qual dos dois candidatos o painel escolheu e por quê.
 
-**6. Fronteira do limiar** — ajuste os atributos de um campo até a confiança
-impressa ficar bem perto de 60%, pra ver o exato ponto em que ele vira cura
-válida ou falha.
+**6. Fronteira do limiar** — ajuste os atributos de um campo até o gauge
+ficar bem em cima da marca dos 60%, pra achar o ponto exato em que a cura
+passa a ser aceita ou rejeitada.
 
-Depois de cada etapa, use `python3 main.py` (sem argumento) pra comparar
-ligado vs. desligado lado a lado contra o mesmo `app.html` quebrado.
+Use os controles **‹ › ▶ ⟲** abaixo do botão de rodar pra andar passo a
+passo pela execução e comparar o log completo de cada tentativa.
