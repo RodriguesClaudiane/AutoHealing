@@ -74,13 +74,5 @@ gauge se a confiança ainda passa da marca de 60%.
 **Ligado**, o teste deve falhar: o gauge fica abaixo da marca de 60% e o
 passo mostra que nenhum candidato foi bom o suficiente.
 
-**5. Ambiguidade** — duplique um `<input>` parecido com outro (mesmo `type`,
-`placeholder` parecido). Rode com **Ligado** e veja, na tabela de
-fingerprint, qual dos dois candidatos o painel escolheu e por quê.
-
-**6. Fronteira do limiar** — ajuste os atributos de um campo até o gauge
-ficar bem em cima da marca dos 60%, pra achar o ponto exato em que a cura
-passa a ser aceita ou rejeitada.
-
 Use os controles **‹ › ▶ ⟲** abaixo do botão de rodar pra andar passo a
 passo pela execução e comparar o log completo de cada tentativa.
