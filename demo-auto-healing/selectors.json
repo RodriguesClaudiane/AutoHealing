@@ -1,0 +1,28 @@
+{
+  "campo_usuario": {
+    "primary": "#username",
+    "fingerprint": {
+      "tag": "input",
+      "name": "username",
+      "type": "text",
+      "placeholder": "Digite seu usuário"
+    }
+  },
+  "campo_senha": {
+    "primary": "#password",
+    "fingerprint": {
+      "tag": "input",
+      "name": "password",
+      "type": "password",
+      "placeholder": "Digite sua senha"
+    }
+  },
+  "botao_entrar": {
+    "primary": "#btn-login",
+    "fingerprint": {
+      "tag": "button",
+      "type": "submit",
+      "text": "Entrar"
+    }
+  }
+}

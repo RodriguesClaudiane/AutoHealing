@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Auto-healing de Seletores — Testador</title>
+<style>
+  :root {
+    --bg: #f4f7f5;
+    --surface: #ffffff;
+    --surface-2: #eaf1ec;
+    --border: #d7e2db;
+    --text: #16211c;
+    --text-dim: #56685d;
+    --text-faint: #8a9a90;
+    --accent: #0e9a72;
+    --accent-soft: #d7f3e6;
+    --danger: #c73e34;
+    --danger-soft: #fbe4e1;
+    --warn: #b8791a;
+    --warn-soft: #f8e9d2;
+    --chip-bg: #eef3f0;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", "Roboto Mono", Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(20, 30, 24, 0.06), 0 8px 24px -12px rgba(20, 30, 24, 0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c1310; --surface: #121c17; --surface-2: #182420; --border: #24352c;
+      --text: #e8f1eb; --text-dim: #93a89b; --text-faint: #5d7267;
+      --accent: #2fd6a1; --accent-soft: #133228;
+      --danger: #ff6f61; --danger-soft: #3a1a17;
+      --warn: #f0b055; --warn-soft: #362510; --chip-bg: #182420;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1220px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.top { display: flex; flex-direction: column; gap: 6px; margin-bottom: 22px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+  }
+  h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+  .sub { color: var(--text-dim); font-size: 14.5px; max-width: 76ch; }
+  .sub code { font-family: var(--mono); font-size: 0.92em; background: var(--chip-bg); padding: 1px 5px; border-radius: 4px; }
+
+  .stage { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .stage { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); gap: 10px; flex-wrap: wrap; }
+  .panel-title { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); }
+
+  .col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ---- editor panel ---- */
+  .toolbar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tbtn {
+    font: inherit; font-size: 12px; font-weight: 600; font-family: var(--sans);
+    padding: 6px 10px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); cursor: pointer;
+  }
+  .tbtn:hover { border-color: var(--accent); color: var(--text); }
+
+  textarea#htmlEditor {
+    width: 100%; min-height: 230px; resize: vertical;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+    padding: 14px 16px; border: none; border-top: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text);
+    outline: none;
+  }
+  textarea#htmlEditor:focus { background: var(--surface); }
+
+  .preview-wrap { border-top: 1px solid var(--border); }
+  .chrome-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface-2); }
+  .chrome-dots { display: flex; gap: 5px; }
+  .chrome-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--border); }
+  .chrome-url {
+    font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 10px; flex: 1;
+  }
+  iframe#previewFrame { width: 100%; height: 190px; border: none; background: var(--surface); display: block; }
+
+  details.ref { border-top: 1px solid var(--border); }
+  details.ref summary {
+    cursor: pointer; padding: 12px 16px; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint);
+  }
+  .ref-body { padding: 0 16px 16px; font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+  .ref-item { padding: 8px 0; border-top: 1px solid var(--border); }
+  .ref-item:first-child { border-top: none; }
+  .ref-item b { color: var(--text); }
+  .ref-item .k { color: var(--text-faint); }
+
+  /* ---- run panel ---- */
+  .run-controls { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--border); }
+  .toggle-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .toggle-row .lbl { font-size: 12.5px; color: var(--text-dim); font-weight: 600; }
+  .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .segmented button {
+    font: inherit; font-size: 12.5px; font-weight: 600; padding: 7px 14px;
+    border: none; background: var(--surface); color: var(--text-dim); cursor: pointer;
+  }
+  .segmented button + button { border-left: 1px solid var(--border); }
+  .segmented button.active { background: var(--accent-soft); color: var(--accent); }
+
+  .run-btn {
+    font: inherit; font-size: 13.5px; font-weight: 700; font-family: var(--sans);
+    padding: 10px 16px; border-radius: 8px; border: 1px solid var(--accent);
+    background: var(--accent); color: var(--surface); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+  }
+  .run-btn:hover { filter: brightness(1.06); }
+  .run-btn:active { filter: brightness(0.96); }
+
+  .controls-mini { display: flex; align-items: center; gap: 6px; }
+  .ctrl-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-dim); cursor: pointer;
+  }
+  .ctrl-btn:hover { border-color: var(--accent); color: var(--text); }
+  .ctrl-btn:disabled { opacity: 0.4; cursor: default; }
+  .ctrl-btn.play { width: auto; padding: 0 12px; gap: 6px; font-size: 12px; font-weight: 600; font-family: var(--sans); }
+  .ctrl-btn.play.playing { border-color: var(--accent); color: var(--accent); }
+
+  .progress-dots { display: flex; gap: 4px; padding: 10px 16px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+  .progress-dots i { display: block; width: 100%; height: 3px; border-radius: 2px; background: var(--border); }
+  .progress-dots .cell { flex: 1; min-width: 10px; cursor: pointer; }
+  .progress-dots .cell.done i { background: var(--text-faint); }
+  .progress-dots .cell.current i { background: var(--accent); }
+
+  .resolver {
+    margin: 12px 16px 0; padding: 9px 12px; border-radius: 8px;
+    background: var(--chip-bg); border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 12.5px; color: var(--text-dim);
+    display: flex; align-items: center; gap: 8px; min-height: 34px;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  .resolver.state-broken { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); animation: shake 0.32s ease; }
+  .resolver.state-ok, .resolver.state-heal { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .resolver.state-fail { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+  .resolver .strike { text-decoration: line-through; opacity: 0.7; }
+  .resolver .sel { color: inherit; font-weight: 600; }
+
+  .detail-body { padding: 14px 16px; min-height: 60px; }
+  .detail-idle { color: var(--text-faint); font-size: 13px; }
+  .detail-idle strong { color: var(--text-dim); }
+
+  .fp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .fp-table th { text-align: left; font-weight: 600; color: var(--text-faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 8px 6px 0; }
+  .fp-table td { padding: 6px 8px 6px 0; vertical-align: middle; border-top: 1px solid var(--border); font-family: var(--mono); }
+  .fp-table .peso { color: var(--text-faint); font-size: 11px; }
+  .sim-bar-track { width: 64px; height: 6px; border-radius: 3px; background: var(--chip-bg); overflow: hidden; }
+  .sim-bar-fill { height: 100%; border-radius: 3px; }
+  .sim-good { background: var(--accent); }
+  .sim-mid { background: var(--warn); }
+  .sim-poor { background: var(--danger); }
+
+  .gauge-wrap { margin-top: 14px; }
+  .gauge-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); margin-bottom: 5px; }
+  .gauge-label .val { font-family: var(--mono); font-weight: 700; }
+  .gauge-track { position: relative; height: 10px; border-radius: 5px; background: var(--chip-bg); }
+  .gauge-fill { position: absolute; inset: 0; border-radius: 5px; width: 0%; transition: width 0.5s ease; }
+  .gauge-fill.pass { background: var(--accent); }
+  .gauge-fill.fail { background: var(--danger); }
+  .gauge-min { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text-faint); }
+  .gauge-min-label { position: absolute; top: 14px; font-size: 10px; color: var(--text-faint); font-family: var(--mono); transform: translateX(-50%); }
+
+  .fail-note { background: var(--danger-soft); border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: var(--mono); }
+  .result-note { border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+  .result-note.pass { background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent); }
+  .result-note.fail { background: var(--danger-soft); border: 1px solid var(--danger); color: var(--danger); }
+  .result-note ul { margin: 8px 0 0; padding-left: 18px; font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+
+  .log-body { max-height: 260px; overflow-y: auto; padding: 6px 6px 10px; font-family: var(--mono); font-size: 12.5px; border-top: 1px solid var(--border); }
+  .log-entry { display: flex; gap: 9px; align-items: flex-start; padding: 7px 10px; border-radius: 7px; animation: rise 0.28s ease; }
+  .log-entry.current { background: var(--surface-2); }
+  @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .log-icon { flex: none; width: 16px; height: 16px; margin-top: 1px; }
+  .log-icon svg { display: block; width: 100%; height: 100%; }
+  .ic-ok { color: var(--accent); } .ic-warn { color: var(--danger); } .ic-heal { color: var(--accent); }
+  .ic-action { color: var(--text-dim); } .ic-pass { color: var(--accent); } .ic-fail { color: var(--danger); }
+  .log-text { color: var(--text-dim); line-height: 1.45; }
+  .log-entry.current .log-text { color: var(--text); }
+  .log-text b { color: var(--text); font-weight: 600; }
+  .log-empty { color: var(--text-faint); padding: 20px 16px; font-size: 12.5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .log-entry, .resolver { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Testador de auto-healing</h1>
+    <div class="sub">
+      Este é o <code>app.html</code> do projeto, do jeito que está agora — o teste passa
+      de cara, com ou sem auto-healing, porque nada quebrou ainda. Edite os <code>id</code>s
+      abaixo pra simular um refactor de frontend e veja o que acontece em cada modo.
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="col">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">app.html (editável)</span>
+          <div class="toolbar">
+            <button class="tbtn" id="btnOriginal">Restaurar original</button>
+          </div>
+        </div>
+        <textarea id="htmlEditor" spellcheck="false"></textarea>
+        <div class="preview-wrap">
+          <div class="chrome-bar">
+            <div class="chrome-dots"><span></span><span></span><span></span></div>
+            <div class="chrome-url">pré-visualização ao vivo do app.html</div>
+          </div>
+          <iframe id="previewFrame" sandbox="allow-scripts" title="Pré-visualização do app.html"></iframe>
+        </div>
+        <details class="ref">
+          <summary>selectors.json (referência — não editável nesta atividade)</summary>
+          <div class="ref-body" id="refBody"></div>
+        </details>
+      </div>
+    </section>
+
+    <section class="col">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Executar</span>
+        </div>
+        <div class="run-controls">
+          <div class="toggle-row">
+            <span class="lbl">Auto-healing</span>
+            <div class="segmented" id="healingToggle">
+              <button data-v="off" class="active">Desligado</button>
+              <button data-v="on">Ligado</button>
+            </div>
+          </div>
+          <button class="run-btn" id="btnRun">▶ Rodar teste</button>
+        </div>
+
+        <div class="progress-dots" id="progressDots"></div>
+        <div class="panel-head" style="border-bottom:none; padding-bottom: 0;">
+          <span class="panel-title">Passo atual</span>
+          <div class="controls-mini">
+            <button class="ctrl-btn" id="btnReset" title="Reiniciar">⟲</button>
+            <button class="ctrl-btn" id="btnPrev" title="Passo anterior">‹</button>
+            <button class="ctrl-btn play" id="btnPlay" title="Reproduzir">▶</button>
+            <button class="ctrl-btn" id="btnNext" title="Próximo passo">›</button>
+          </div>
+        </div>
+        <div class="resolver" id="resolver">clique em "Rodar teste" para começar</div>
+        <div class="detail-body" id="detailBody">
+          <div class="detail-idle">Nenhum passo em execução ainda.</div>
+        </div>
+        <div class="log-body" id="logBody">
+          <div class="log-empty">Os passos aparecerão aqui conforme forem executados.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var CONFIANCA_MINIMA = 0.60;
+  var ORDEM = ["campo_usuario", "campo_senha", "botao_entrar"];
+  var VERBOS = { campo_usuario: "Digitando usuário", campo_senha: "Digitando senha", botao_entrar: "Clicando" };
+  var PESOS = { tag: 1.0, name: 3.0, type: 2.0, placeholder: 2.0, text: 2.0 };
+
+  var SELETORES = {
+    campo_usuario: { primary: "#username", fingerprint: { tag: "input", name: "username", type: "text", placeholder: "Digite seu usuário" } },
+    campo_senha: { primary: "#password", fingerprint: { tag: "input", name: "password", type: "password", placeholder: "Digite sua senha" } },
+    botao_entrar: { primary: "#btn-login", fingerprint: { tag: "button", type: "submit", text: "Entrar" } }
+  };
+
+  var HTML_ORIGINAL =
+    '<html>\n<body>\n  <h1>Sistema Acadêmico IFPE</h1>\n  <form>\n' +
+    '    <label for="username">Usuário</label>\n' +
+    '    <input id="username" name="username" type="text" placeholder="Digite seu usuário" />\n\n' +
+    '    <label for="password">Senha</label>\n' +
+    '    <input id="password" name="password" type="password" placeholder="Digite sua senha" />\n\n' +
+    '    <button id="btn-login" type="submit">Entrar</button>\n' +
+    '  </form>\n</body>\n</html>';
+
+  // ---------------- motor (espelha auto_healing.py) ----------------
+
+  function longestMatch(a, alo, ahi, b, blo, bhi) {
+    var bestI = alo, bestJ = blo, bestK = 0;
+    for (var i = alo; i < ahi; i++) {
+      for (var j = blo; j < bhi; j++) {
+        var k = 0;
+        while (i + k < ahi && j + k < bhi && a[i + k] === b[j + k]) k++;
+        if (k > bestK) { bestI = i; bestJ = j; bestK = k; }
+      }
+    }
+    return [bestI, bestJ, bestK];
+  }
+  function matchLength(a, alo, ahi, b, blo, bhi) {
+    var m = longestMatch(a, alo, ahi, b, blo, bhi);
+    var i = m[0], j = m[1], k = m[2];
+    if (k === 0) return 0;
+    var total = k;
+    if (i > alo && j > blo) total += matchLength(a, alo, i, b, blo, j);
+    if (i + k < ahi && j + k < bhi) total += matchLength(a, i + k, ahi, b, j + k, bhi);
+    return total;
+  }
+  function similaridade(a, b) {
+    a = String(a).toLowerCase(); b = String(b).toLowerCase();
+    if (a.length === 0 && b.length === 0) return 1.0;
+    var m = matchLength(a, 0, a.length, b, 0, b.length);
+    return (2.0 * m) / (a.length + b.length);
+  }
+
+  function parseElementos(html) {
+    var doc = new DOMParser().parseFromString(html, "text/html");
+    var root = doc.body || doc.documentElement;
+    var out = [];
+    root.querySelectorAll("*").forEach(function (el) {
+      var attrs = {};
+      for (var i = 0; i < el.attributes.length; i++) {
+        attrs[el.attributes[i].name] = el.attributes[i].value;
+      }
+      var text = "";
+      el.childNodes.forEach(function (n) { if (n.nodeType === 3) text += n.textContent; });
+      out.push({ tag: el.tagName.toLowerCase(), attrs: attrs, text: text.trim() });
+    });
+    return out;
+  }
+
+  function buscarPorId(elementos, seletor) {
+    if (seletor[0] !== "#") return null;
+    var alvo = seletor.slice(1);
+    for (var i = 0; i < elementos.length; i++) if (elementos[i].attrs.id === alvo) return elementos[i];
+    return null;
+  }
+
+  function scoreDetalhado(fingerprint, el) {
+    var rows = [], total = 0, obtido = 0;
+    Object.keys(fingerprint).forEach(function (chave) {
+      var esperado = fingerprint[chave];
+      var peso = PESOS[chave] !== undefined ? PESOS[chave] : 1.0;
+      var atual = chave === "text" ? el.text : (el.attrs[chave] !== undefined ? el.attrs[chave] : "");
+      var sim = similaridade(esperado, atual);
+      total += peso; obtido += peso * sim;
+      rows.push({ attr: chave, peso: peso, esperado: esperado, atual: atual, sim: sim });
+    });
+    return { rows: rows, total: total ? obtido / total : 0 };
+  }
+
+  function rodarTeste(html, healingAtivo) {
+    var elementos = parseElementos(html);
+    var steps = [];
+    var healedMap = {};
+    var aborted = false;
+
+    for (var i = 0; i < ORDEM.length; i++) {
+      var logical = ORDEM[i];
+      var info = SELETORES[logical];
+      var achado = buscarPorId(elementos, info.primary);
+
+      if (achado) {
+        steps.push({ type: "locate-ok", logical: logical, selector: info.primary });
+        continue;
+      }
+
+      steps.push({ type: "locate-broken", logical: logical, selector: info.primary });
+
+      if (!healingAtivo) {
+        steps.push({ type: "heal-fail", logical: logical, selector: info.primary, motivo: "desligado" });
+        aborted = true; break;
+      }
+
+      var melhor = null, melhorScore = null;
+      elementos.forEach(function (el) {
+        var s = scoreDetalhado(info.fingerprint, el);
+        if (!melhorScore || s.total > melhorScore.total) { melhorScore = s; melhor = el; }
+      });
+
+      if (!melhor || melhorScore.total < CONFIANCA_MINIMA) {
+        steps.push({
+          type: "heal-fail", logical: logical, selector: info.primary, motivo: "confianca",
+          breakdown: melhorScore, candidato: melhor
+        });
+        aborted = true; break;
+      }
+
+      var novoId = melhor.attrs.id ? "#" + melhor.attrs.id : melhor.tag;
+      steps.push({ type: "heal", logical: logical, from: info.primary, to: novoId, breakdown: melhorScore });
+      healedMap[logical] = { to: novoId, confidence: melhorScore.total };
+    }
+
+    if (!aborted) {
+      ORDEM.forEach(function (logical) {
+        var used = healedMap[logical] ? healedMap[logical].to : SELETORES[logical].primary;
+        steps.push({ type: "action", logical: logical, selector: used });
+      });
+      var healedCount = Object.keys(healedMap).length;
+      steps.push({
+        type: "result", passed: true,
+        text: healedCount ? "TESTE PASSOU (" + healedCount + " seletor(es) curado(s) em tempo de execução)" : "TESTE PASSOU",
+        healedMap: healedMap
+      });
+    } else {
+      var last = steps[steps.length - 1];
+      var msg = last.motivo === "desligado"
+        ? "ElementNotFound: " + last.selector + " — auto-healing DESLIGADO, teste falha."
+        : "Healing falhou para '" + last.logical + "': melhor candidato <" + (last.candidato ? last.candidato.tag : "?") +
+          "> com confiança " + Math.round(last.breakdown.total * 100) + "% < " + Math.round(CONFIANCA_MINIMA * 100) + "%";
+      steps.push({ type: "result", passed: false, text: "TESTE FALHOU — " + msg, healedMap: {} });
+    }
+
+    return steps;
+  }
+
+  // ---------------- ícones ----------------
+  function icon(name) {
+    var c = 'viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"';
+    switch (name) {
+      case "ok": return '<svg ' + c + '><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M5.3 8.2l1.8 1.8 3.6-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      case "warn": return '<svg ' + c + '><path d="M8 2.3 14.2 13H1.8L8 2.3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="8" y1="6.6" x2="8" y2="9.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.4" r="0.9" fill="currentColor"/></svg>';
+      case "heal": return '<svg ' + c + '><rect x="2" y="2" width="12" height="12" rx="3" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="5" x2="8" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+      case "action": return '<svg ' + c + '><path d="M4 3l9 5.3-3.9.9-1.6 3.7L4 3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+      case "pass": return '<svg ' + c + '><rect x="2" y="2" width="12" height="12" rx="6" fill="currentColor" opacity="0.15"/><path d="M5 8.3l2 2 4-4.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      case "fail": return '<svg ' + c + '><rect x="2" y="2" width="12" height="12" rx="6" fill="currentColor" opacity="0.15"/><line x1="5.5" y1="5.5" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="10.5" y1="5.5" x2="5.5" y2="10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      default: return "";
+    }
+  }
+
+  // ---------------- estado / DOM ----------------
+  var els = {
+    editor: document.getElementById("htmlEditor"),
+    preview: document.getElementById("previewFrame"),
+    refBody: document.getElementById("refBody"),
+    resolver: document.getElementById("resolver"),
+    detail: document.getElementById("detailBody"),
+    log: document.getElementById("logBody"),
+    dots: document.getElementById("progressDots"),
+    btnRun: document.getElementById("btnRun"),
+    btnPlay: document.getElementById("btnPlay"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnReset: document.getElementById("btnReset"),
+    healingToggle: document.getElementById("healingToggle")
+  };
+
+  var state = { healing: false, steps: [], stepIndex: -1, playing: false, timer: null };
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; });
+  }
+
+  function renderRef() {
+    els.refBody.innerHTML = Object.keys(SELETORES).map(function (k) {
+      var info = SELETORES[k];
+      var fp = Object.keys(info.fingerprint).map(function (a) { return a + "=" + JSON.stringify(info.fingerprint[a]); }).join(", ");
+      return '<div class="ref-item"><span class="k">' + k + '</span> → <b>' + info.primary + '</b><br>' + fp + '</div>';
+    }).join("");
+  }
+
+  var PREVIEW_SCRIPT =
+    '<script>window.addEventListener("message",function(ev){var d=ev.data||{};' +
+    'if(d.type==="reset"){document.querySelectorAll("[data-heal-ring]").forEach(function(el){el.style.outline="";el.style.boxShadow="";el.removeAttribute("data-heal-ring");});}' +
+    'else if(d.type==="ring"&&d.id){var el=document.getElementById(d.id);if(el){el.style.transition="box-shadow .25s ease, outline-color .25s ease";el.style.outline="2px solid "+d.color;el.style.outlineOffset="2px";el.style.boxShadow="0 0 0 4px "+d.soft;el.setAttribute("data-heal-ring","1");}}' +
+    '});<\/script>';
+
+  function rebuildPreview() {
+    var src = els.editor.value;
+    var withScript = /<\/body>/i.test(src) ? src.replace(/<\/body>/i, PREVIEW_SCRIPT + "</body>") : src + PREVIEW_SCRIPT;
+    els.preview.srcdoc = withScript;
+  }
+
+  function ringPreview(id, color, soft) {
+    try {
+      els.preview.contentWindow.postMessage({ type: "reset" }, "*");
+      if (id) els.preview.contentWindow.postMessage({ type: "ring", id: id.replace(/^#/, ""), color: color, soft: soft }, "*");
+    } catch (e) { /* ignora — pré-visualização pode ainda não estar pronta */ }
+  }
+
+  function simClass(sim) { return sim >= 0.8 ? "sim-good" : sim >= 0.4 ? "sim-mid" : "sim-poor"; }
+
+  function fpTable(bd) {
+    var rows = bd.rows.map(function (r) {
+      return '<tr><td>' + r.attr + '</td><td class="peso">' + r.peso + '×</td>' +
+        '<td>' + escapeHtml(r.esperado) + '</td>' +
+        '<td>' + (r.atual ? escapeHtml(r.atual) : '<span style="opacity:.5">—</span>') + '</td>' +
+        '<td><div class="sim-bar-track"><div class="sim-bar-fill ' + simClass(r.sim) + '" style="width:' + (r.sim * 100) + '%"></div></div></td>' +
+        '<td>' + Math.round(r.sim * 100) + '%</td></tr>';
+    }).join("");
+    var pass = bd.total >= CONFIANCA_MINIMA;
+    return '<table class="fp-table"><thead><tr><th>atributo</th><th>peso</th><th>esperado</th><th>atual (candidato)</th><th>similaridade</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div class="gauge-wrap"><div class="gauge-label"><span>confiança total</span><span class="val">' + Math.round(bd.total * 100) + '%</span></div>' +
+      '<div class="gauge-track"><div class="gauge-fill ' + (pass ? "pass" : "fail") + '" style="width:' + (bd.total * 100) + '%"></div>' +
+      '<div class="gauge-min" style="left:' + (CONFIANCA_MINIMA * 100) + '%"></div></div>' +
+      '<div class="gauge-min-label" style="left:' + (CONFIANCA_MINIMA * 100) + '%">mín. ' + Math.round(CONFIANCA_MINIMA * 100) + '%</div></div>';
+  }
+
+  function renderDetail(step) {
+    if (!step) { els.detail.innerHTML = '<div class="detail-idle">Nenhum passo em execução ainda.</div>'; return; }
+    if (step.type === "locate-ok") {
+      els.detail.innerHTML = '<div class="detail-idle">Seletor primário <strong>' + step.selector + '</strong> encontrou <strong>' + step.logical + '</strong> diretamente. Nenhuma cura necessária.</div>';
+    } else if (step.type === "locate-broken") {
+      els.detail.innerHTML = '<div class="detail-idle">O seletor primário <strong>' + step.selector + '</strong> não corresponde a nenhum elemento no HTML atual.</div>';
+    } else if (step.type === "heal") {
+      els.detail.innerHTML = fpTable(step.breakdown);
+    } else if (step.type === "heal-fail") {
+      if (step.motivo === "desligado") {
+        els.detail.innerHTML = '<div class="fail-note">AssertionError: ElementNotFound(' + step.selector + ') — auto-healing está desligado neste cenário, o teste aborta imediatamente.</div>';
+      } else {
+        els.detail.innerHTML = fpTable(step.breakdown) + '<div class="fail-note" style="margin-top:10px;">Melhor candidato não passou do limiar de confiança — healing desiste e o teste falha.</div>';
+      }
+    } else if (step.type === "action") {
+      var meta = VERBOS[step.logical];
+      els.detail.innerHTML = '<div class="detail-idle">' + meta + ' em <strong>' + step.selector + '</strong>.</div>';
+    } else if (step.type === "result") {
+      var healed = Object.keys(step.healedMap || {});
+      var list = healed.length
+        ? '<ul>' + healed.map(function (l) { return '<li>' + l + ' → ' + step.healedMap[l].to + ' (' + Math.round(step.healedMap[l].confidence * 100) + '%)</li>'; }).join("") + '</ul>'
+        : "";
+      els.detail.innerHTML = '<div class="result-note ' + (step.passed ? "pass" : "fail") + '">' + step.text + list + '</div>';
+    }
+  }
+
+  function setResolver(html, cls) { els.resolver.innerHTML = html; els.resolver.className = "resolver" + (cls ? " state-" + cls : ""); }
+
+  function applyVisuals(step) {
+    if (!step) { setResolver('clique em "Rodar teste" para começar', ""); ringPreview(null); return; }
+    if (step.type === "locate-ok") {
+      setResolver('buscando <span class="sel">' + step.logical + '</span> via <span class="sel">' + step.selector + '</span> → encontrado', "ok");
+      ringPreview(step.selector, "#0e9a72", "rgba(14,154,114,.25)");
+    } else if (step.type === "locate-broken") {
+      setResolver('buscando <span class="sel">' + step.logical + '</span> via <span class="strike sel">' + step.selector + '</span> → não encontrado', "broken");
+    } else if (step.type === "heal") {
+      setResolver('curado: <span class="strike sel">' + step.from + '</span> <span class="arrow">→</span> <span class="sel">' + step.to + '</span>', "heal");
+      ringPreview(step.to, "#0e9a72", "rgba(14,154,114,.25)");
+    } else if (step.type === "heal-fail") {
+      setResolver(step.motivo === "desligado" ? 'auto-healing desligado — abortando em <span class="sel">' + step.selector + '</span>' : 'confiança insuficiente — abortando em <span class="sel">' + step.selector + '</span>', "fail");
+      ringPreview(null);
+    } else if (step.type === "action") {
+      setResolver(VERBOS[step.logical] + ' em <span class="sel">' + step.selector + '</span>', "ok");
+      ringPreview(step.selector, "#0e9a72", "rgba(14,154,114,.25)");
+    } else if (step.type === "result") {
+      setResolver(step.passed ? "execução concluída (passou)" : "execução abortada (falhou)", step.passed ? "ok" : "fail");
+    }
+  }
+
+  function logLine(step) {
+    var icn, cls, text;
+    if (step.type === "locate-ok") {
+      icn = "ok"; cls = "ic-ok";
+      text = "<b>" + step.logical + "</b>: encontrado por " + step.selector;
+    } else if (step.type === "locate-broken") {
+      icn = "warn"; cls = "ic-warn";
+      text = "<b>" + step.logical + "</b>: seletor " + step.selector + " quebrou (elemento não existe)";
+    } else if (step.type === "heal") {
+      icn = "heal"; cls = "ic-heal";
+      text = "curado: " + step.from + " → " + step.to + " (confiança " + Math.round(step.breakdown.total * 100) + "%)";
+    } else if (step.type === "heal-fail") {
+      icn = "warn"; cls = "ic-warn";
+      text = step.motivo === "desligado" ? "ElementNotFound: " + step.selector + " — auto-healing desligado" : "Healing falhou para " + step.logical + ": confiança abaixo do mínimo";
+    } else if (step.type === "action") {
+      icn = "action"; cls = "ic-action";
+      text = VERBOS[step.logical] + " em " + step.selector;
+    } else if (step.type === "result") {
+      icn = step.passed ? "pass" : "fail"; cls = step.passed ? "ic-pass" : "ic-fail";
+      text = "<b>" + step.text + "</b>";
+    }
+    return { icn: icn, cls: cls, text: text };
+  }
+
+  function renderLog() {
+    var steps = state.steps;
+    els.log.innerHTML = "";
+    if (state.stepIndex < 0) { els.log.innerHTML = '<div class="log-empty">Os passos aparecerão aqui conforme forem executados.</div>'; return; }
+    for (var i = 0; i <= state.stepIndex; i++) {
+      var l = logLine(steps[i]);
+      var row = document.createElement("div");
+      row.className = "log-entry" + (i === state.stepIndex ? " current" : "");
+      row.innerHTML = '<span class="log-icon ' + l.cls + '">' + icon(l.icn) + '</span><span class="log-text">' + l.text + '</span>';
+      els.log.appendChild(row);
+    }
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  function renderDots() {
+    var steps = state.steps;
+    els.dots.innerHTML = "";
+    steps.forEach(function (step, i) {
+      var cell = document.createElement("div");
+      cell.className = "cell" + (i < state.stepIndex ? " done" : "") + (i === state.stepIndex ? " current" : "");
+      cell.title = "passo " + (i + 1);
+      cell.innerHTML = "<i></i>";
+      cell.addEventListener("click", function () { goTo(i); });
+      els.dots.appendChild(cell);
+    });
+  }
+
+  function renderAll() {
+    var step = state.stepIndex >= 0 ? state.steps[state.stepIndex] : null;
+    applyVisuals(step);
+    renderDetail(step);
+    renderLog();
+    renderDots();
+    els.btnPrev.disabled = state.stepIndex <= 0;
+    var atEnd = state.steps.length === 0 || state.stepIndex >= state.steps.length - 1;
+    els.btnNext.disabled = atEnd;
+    if (atEnd) stopPlaying();
+  }
+
+  function goTo(i) { state.stepIndex = Math.max(-1, Math.min(state.steps.length - 1, i)); renderAll(); }
+  function stepForward() { if (state.stepIndex >= state.steps.length - 1) { stopPlaying(); return; } state.stepIndex++; renderAll(); }
+
+  function startPlaying() {
+    if (!state.steps.length) return;
+    if (state.stepIndex >= state.steps.length - 1) state.stepIndex = -1;
+    state.playing = true; els.btnPlay.classList.add("playing"); els.btnPlay.textContent = "❚❚";
+    tick();
+  }
+  function tick() {
+    if (!state.playing) return;
+    stepForward();
+    if (state.stepIndex >= state.steps.length - 1) { stopPlaying(); return; }
+    state.timer = setTimeout(tick, 1100);
+  }
+  function stopPlaying() { state.playing = false; clearTimeout(state.timer); els.btnPlay.classList.remove("playing"); els.btnPlay.textContent = "▶"; }
+
+  function runTest() {
+    stopPlaying();
+    state.steps = rodarTeste(els.editor.value, state.healing);
+    state.stepIndex = -1;
+    renderAll();
+    startPlaying();
+  }
+
+  els.healingToggle.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-v]");
+    if (!btn) return;
+    state.healing = btn.dataset.v === "on";
+    els.healingToggle.querySelectorAll("button").forEach(function (b) { b.classList.toggle("active", b === btn); });
+  });
+
+  els.btnRun.addEventListener("click", runTest);
+  els.btnPlay.addEventListener("click", function () { if (state.playing) stopPlaying(); else startPlaying(); });
+  els.btnNext.addEventListener("click", function () { stopPlaying(); stepForward(); });
+  els.btnPrev.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex - 1); });
+  els.btnReset.addEventListener("click", function () { stopPlaying(); goTo(-1); });
+
+  document.getElementById("btnOriginal").addEventListener("click", function () { els.editor.value = HTML_ORIGINAL; rebuildPreview(); });
+
+  var debounceTimer;
+  els.editor.addEventListener("input", function () {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(rebuildPreview, 300);
+  });
+
+  renderRef();
+  els.editor.value = HTML_ORIGINAL;
+  rebuildPreview();
+  renderAll();
+})();
+</script>
+</body>
+</html>
