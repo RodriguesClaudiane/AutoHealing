@@ -38,11 +38,7 @@ open painel.html
 start painel.html
 ```
 
-Se nenhum desses funcionar, o atalho `python3 abrir_painel.py` já detecta
-WSL automaticamente e resolve isso pra você (é o mais confiável). Duplo
-clique no arquivo, ou arrastar pra uma aba do navegador, também funciona.
-
-O painel mostra:
+## O painel mostra:
 
 - um **editor** com o `app.html` (é o único trecho que você vai editar);
 - uma **pré-visualização ao vivo** da página, à direita/abaixo do editor;
